@@ -1,0 +1,19 @@
+# Terraform local directory
+.terraform/
+
+# Terraform state files (store sensitive info like credentials)
+terraform.tfstate
+terraform.tfstate.backup
+
+# Lock file (auto-generated, shouldn't be in version control)
+.terraform.lock.hcl
+
+# Ignore any crash logs or debug files
+crash.log
+terraform.tfvars
+terraform.tfvars.json
+override.tf
+override.tf.json
+
+# Ignore Terraform plan output files
+*.tfplan
