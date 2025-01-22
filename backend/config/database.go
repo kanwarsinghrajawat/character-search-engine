@@ -20,10 +20,19 @@ func InitMongoDB() {
 		log.Println("Warning: No .env file found, using system environment variables.")
 	}
 
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		log.Fatal("ERROR: MONGO_URI not set in .env file")
+	username := os.Getenv("MONGO_USERNAME")
+	password := os.Getenv("MONGO_PASSWORD")
+	host := os.Getenv("MONGO_HOST")
+	port := os.Getenv("MONGO_PORT")
+	dbName := os.Getenv("MONGO_DB")
+	authSource := os.Getenv("MONGO_AUTH_SOURCE")
+
+	if username == "" || password == "" || host == "" || port == "" || dbName == "" || authSource == "" {
+		log.Fatal("ERROR: Missing MongoDB environment variables")
 	}
+
+	mongoURI := fmt.Sprintf("mongodb://%s:%s@%s:%s/%s?authSource=%s",
+		username, password, host, port, dbName, authSource)
 
 	clientOptions := options.Client().ApplyURI(mongoURI)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
@@ -36,9 +45,9 @@ func InitMongoDB() {
 		log.Fatalf("MongoDB Ping Failed: %v", err)
 	}
 
-	fmt.Println("Connected to MongoDB at", mongoURI)
+	fmt.Println("Connected to MongoDB at", host)
 
-	DB = client.Database("rickmorty")
+	DB = client.Database(dbName)
 
 	createIndexes()
 }
@@ -47,7 +56,7 @@ func createIndexes() {
 	collection := DB.Collection("characters")
 
 	indexModel := mongo.IndexModel{
-		Keys: bson.D{{Key: "name", Value: "text"}},
+		Keys:    bson.D{{Key: "name", Value: "text"}}, 
 		Options: options.Index().SetUnique(false),
 	}
 
