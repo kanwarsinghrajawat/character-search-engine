@@ -14,12 +14,15 @@ import (
 
 var DB *mongo.Database
 
-func InitMongoDB() {
-	err := godotenv.Load()
-	if err != nil {
+// Load environment variables
+func LoadEnv() {
+	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: No .env file found, using system environment variables.")
 	}
+}
 
+// Get MongoDB connection URI from environment variables
+func getMongoURI() string {
 	username := os.Getenv("MONGO_USERNAME")
 	password := os.Getenv("MONGO_PASSWORD")
 	host := os.Getenv("MONGO_HOST")
@@ -31,8 +34,14 @@ func InitMongoDB() {
 		log.Fatal("ERROR: Missing MongoDB environment variables")
 	}
 
-	mongoURI := fmt.Sprintf("mongodb://%s:%s@%s:%s/%s?authSource=%s",
+	return fmt.Sprintf("mongodb://%s:%s@%s:%s/%s?authSource=%s",
 		username, password, host, port, dbName, authSource)
+}
+
+// Initialize MongoDB connection
+func InitMongoDB() {
+	LoadEnv()
+	mongoURI := getMongoURI()
 
 	clientOptions := options.Client().ApplyURI(mongoURI)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
@@ -40,30 +49,27 @@ func InitMongoDB() {
 		log.Fatalf("MongoDB Connection Error: %v", err)
 	}
 
-	err = client.Ping(context.TODO(), nil)
-	if err != nil {
+	if err := client.Ping(context.TODO(), nil); err != nil {
 		log.Fatalf("MongoDB Ping Failed: %v", err)
 	}
 
-	fmt.Println("Connected to MongoDB at", host)
-
-	DB = client.Database(dbName)
+	log.Println("Connected to MongoDB")
+	DB = client.Database(os.Getenv("MONGO_DB"))
 
 	createIndexes()
 }
 
+// Ensure indexes are created
 func createIndexes() {
 	collection := DB.Collection("characters")
-
 	indexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "name", Value: "text"}}, 
+		Keys:    bson.D{{Key: "name", Value: "text"}},
 		Options: options.Index().SetUnique(false),
 	}
 
-	_, err := collection.Indexes().CreateOne(context.TODO(), indexModel)
-	if err != nil {
+	if _, err := collection.Indexes().CreateOne(context.TODO(), indexModel); err != nil {
 		log.Fatalf("Failed to create index on 'name' field: %v", err)
 	}
 
-	fmt.Println("Index on 'name' field created successfully")
+	log.Println("Index on 'name' field created successfully")
 }

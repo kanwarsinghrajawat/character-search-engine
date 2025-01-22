@@ -5,6 +5,7 @@ import (
 	"backend/handlers"
 )
 
+// RegisterRoutes sets up API endpoints
 func RegisterRoutes(router *gin.Engine) {
 	router.GET("/character/:name", handlers.GetCharacterByName)
 }
